@@ -1,60 +1,123 @@
-import React, { useState, useContext } from "react";
-import { Calendar, Button, Input, List, Upload, message } from "antd";
+import React, { useState, useContext, useEffect } from "react";
+import { Calendar, Button, Input, List, Upload, message, Checkbox } from "antd";
 import dayjs from "dayjs";
+import axios from "axios";
 import { PlusOutlined, LeftOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
 import { ThemeContext } from "../context/ThemeContext"; // Import ThemeContext
 
 const CustomCalendar = () => {
   const { darkMode } = useContext(ThemeContext); // Get darkMode value from ThemeContext
-  const [currentDate, setCurrentDate] = useState(dayjs()); // 현재 날짜 상태 관리
-  const [selectedDate, setSelectedDate] = useState(dayjs()); // 선택된 날짜 상태 관리
-  const [todos, setTodos] = useState({}); // 날짜별 todo 목록을 저장
-  const [todoInput, setTodoInput] = useState(""); // Todo 입력 필드 상태 관리
-  const [calendarMode, setCalendarMode] = useState("month"); // Calendar의 mode 상태 관리
-  const [imageList, setImageList] = useState({}); // 각 Todo에 대한 이미지 목록 저장
+  const [currentDate, setCurrentDate] = useState(dayjs()); // Manage the current date state
+  const [selectedDate, setSelectedDate] = useState(dayjs()); // Manage the selected date state
+  const [todos, setTodos] = useState({}); // Store todos by date
+  const [todoInput, setTodoInput] = useState(""); // Manage the todo input field state
+  const [calendarMode, setCalendarMode] = useState("month"); // Manage the calendar mode state
+  const [imageList, setImageList] = useState({}); // Store image lists for each todo
 
-  // 날짜 선택 시 호출되는 함수
+  useEffect(() => {
+    fetchTodosForCurrentMonth();
+  }, [currentDate]);
+
+  useEffect(() => {
+    fetchTodosForSelectedDate();
+  }, [selectedDate]);
+
+  const fetchTodosForCurrentMonth = async () => {
+    const startOfMonth = currentDate.startOf("month").format("YYYY-MM-DD");
+    const endOfMonth = currentDate.endOf("month").format("YYYY-MM-DD");
+    try {
+      const response = await axios.get(`http://localhost:8080/api/todos?start=${startOfMonth}&end=${endOfMonth}`);
+      const todosByDate = response.data.reduce((acc, todo) => {
+        const dateKey = dayjs(todo.date).format("YYYY-MM-DD");
+        if (!acc[dateKey]) {
+          acc[dateKey] = [];
+        }
+        acc[dateKey].push(todo);
+        return acc;
+      }, {});
+      setTodos(todosByDate);
+    } catch (error) {
+      console.error("Failed to fetch todos:", error);
+    }
+  };
+
+  const fetchTodosForSelectedDate = async () => {
+    const dateKey = selectedDate.format("YYYY-MM-DD");
+    try {
+      const response = await axios.get(`http://localhost:8080/api/todos/${dateKey}`);
+      setTodos((prevTodos) => ({
+        ...prevTodos,
+        [dateKey]: response.data,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch todos:", error);
+    }
+  };
+
+  const addTodo = async () => {
+    if (todoInput.trim()) {
+      const dateKey = selectedDate.format("YYYY-MM-DD");
+      const newTodo = { title: todoInput, description: "", date: dateKey };
+      try {
+        const response = await axios.post("http://localhost:8080/api/todos", newTodo);
+        setTodos((prevTodos) => ({
+          ...prevTodos,
+          [dateKey]: [...(prevTodos[dateKey] || []), response.data],
+        }));
+        setTodoInput(""); // Reset the input field
+        setImageList({}); // Reset the image list
+      } catch (error) {
+        console.error("Failed to add todo:", error);
+      }
+    }
+  };
+
+  const deleteTodo = async (id) => {
+    try {
+      await axios.delete(`http://localhost:8080/api/todos/${id}`);
+      fetchTodosForSelectedDate();
+    } catch (error) {
+      console.error("Failed to delete todo:", error);
+    }
+  };
+
+  const toggleTodoCompleted = async (id) => {
+    try {
+      const response = await axios.patch(`http://localhost:8080/api/todos/${id}/toggle`);
+      const updatedTodo = response.data;
+      const dateKey = dayjs(updatedTodo.date).format("YYYY-MM-DD");
+      setTodos((prevTodos) => ({
+        ...prevTodos,
+        [dateKey]: prevTodos[dateKey].map((todo) =>
+          todo.id === updatedTodo.id ? updatedTodo : todo
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to toggle todo completed status:", error);
+    }
+  };
+
   const onSelect = (date) => {
     setSelectedDate(date);
   };
 
-  // 패널이 변경될 때 (월/년 탭 이동)
   const onPanelChange = (value, mode) => {
-    setCurrentDate(value); // 패널 변경 시 날짜 상태 업데이트
-    setCalendarMode(mode); // 패널 변경 시 모드 상태 업데이트
+    setCurrentDate(value); // Update the date state when the panel changes
+    setCalendarMode(mode); // Update the mode state when the panel changes
   };
 
-  // 오늘 날짜로 이동
   const goToToday = () => {
     const today = dayjs();
-    setCurrentDate(today); // 오늘 날짜로 이동
-    setSelectedDate(today); // 선택된 날짜도 오늘로 설정
-    setCalendarMode("month"); // 월 탭으로 이동하도록 설정
+    setCurrentDate(today); // Move to today's date
+    setSelectedDate(today); // Set the selected date to today
+    setCalendarMode("month"); // Set the calendar mode to month
   };
 
-  // 날짜에 해당하는 Todo 목록 추가
-  const addTodo = () => {
-    if (todoInput.trim()) {
-      const newTodos = { ...todos };
-      const dateKey = selectedDate.format("YYYY-MM-DD");
-      if (newTodos[dateKey]) {
-        newTodos[dateKey].push({ text: todoInput, image: imageList[dateKey] || null });
-      } else {
-        newTodos[dateKey] = [{ text: todoInput, image: imageList[dateKey] || null }];
-      }
-      setTodos(newTodos);
-      setTodoInput(""); // 입력 필드 초기화
-      setImageList({}); // 이미지 목록 초기화
-    }
-  };
-
-  // 선택된 날짜에 해당하는 Todo 목록 가져오기
   const getTodosForSelectedDate = () => {
     const dateKey = selectedDate.format("YYYY-MM-DD");
     return todos[dateKey] || [];
   };
 
-  // 날짜 셀 렌더링 시 호출되어, Todo가 있는 날짜에 동그란 점 추가
   const dateCellRender = (date) => {
     const dateKey = date.format("YYYY-MM-DD");
     const hasTodos = todos[dateKey] && todos[dateKey].length > 0;
@@ -77,21 +140,18 @@ const CustomCalendar = () => {
     ) : null;
   };
 
-  // Move to the previous month
   const goToPreviousMonth = () => {
     const prevMonth = currentDate.subtract(1, "month");
     setCurrentDate(prevMonth); // Update the current date to the previous month
     setSelectedDate(prevMonth); // Set the selected date to the same month
   };
 
-  // Move to the next month
   const goToNextMonth = () => {
     const nextMonth = currentDate.add(1, "month");
     setCurrentDate(nextMonth); // Update the current date to the next month
     setSelectedDate(nextMonth); // Set the selected date to the same month
   };
 
-  // Handle image upload
   const handleImageChange = (date, info) => {
     if (info.file.status === "done") {
       const newImageList = { ...imageList };
@@ -99,6 +159,7 @@ const CustomCalendar = () => {
       setImageList(newImageList);
     } else if (info.file.status === "error") {
       message.error("Image upload failed.");
+      console.error("Image upload failed:", info.file.error);
     }
   };
 
@@ -122,7 +183,6 @@ const CustomCalendar = () => {
           background: darkMode ? "#1f1f1f" : "#fff", // Dark mode background for the inner container
         }}
       >
-        {/* Flex container for buttons and calendar */}
         <div
           style={{
             display: "flex",
@@ -131,7 +191,6 @@ const CustomCalendar = () => {
             marginBottom: "20px",
           }}
         >
-          {/* Left and Right navigation buttons */}
           <Button
             icon={<LeftOutlined />}
             onClick={goToPreviousMonth}
@@ -145,10 +204,10 @@ const CustomCalendar = () => {
           <Calendar
             fullscreen={false}
             onSelect={onSelect}
-            value={selectedDate} // Calendar에 선택된 날짜를 표시
-            onPanelChange={onPanelChange} // 패널 변경 시 호출되는 함수
+            value={selectedDate} // Display the selected date in the calendar
+            onPanelChange={onPanelChange} // Function called when the panel changes
             style={{ marginBottom: "20px", flexGrow: 1 }} // Make Calendar fill the space
-            mode={calendarMode} // Calendar의 mode를 설정
+            mode={calendarMode} // Set the mode of the Calendar
             dateCellRender={dateCellRender} // Custom date cell render for dots
             className={darkMode ? "dark-calendar" : ""} // Optionally add dark mode class
           />
@@ -172,12 +231,11 @@ const CustomCalendar = () => {
             backgroundColor: darkMode ? "#333" : "#fff", // Button color in dark mode
             color: darkMode ? "#fff" : "#000", // Button text color
           }}
-          size="small" // 버튼 크기를 작게
+          size="small" // Make the button small
         >
           Go to Today
         </Button>
 
-        {/* Todo List Section */}
         <div
           style={{
             marginTop: "20px",
@@ -197,39 +255,48 @@ const CustomCalendar = () => {
                   background: darkMode ? "#333" : "#fff", // List item background color
                   color: darkMode ? "#fff" : "#000", // List item text color
                 }}
+                actions={[
+                  <Button type="link" onClick={() => deleteTodo(item.id)}>
+                    Delete
+                  </Button>,
+                ]}
               >
-                <div>
-                  <p>{item.text}</p>
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt="todo"
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        objectFit: "cover",
-                      }}
-                    />
-                  )}
-                </div>
+                <Checkbox
+                  checked={item.completed}
+                  onChange={() => toggleTodoCompleted(item.id)}
+                >
+                  {item.title}
+                </Checkbox>
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt="todo"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      objectFit: "cover",
+                      marginLeft: "10px",
+                    }}
+                  />
+                )}
               </List.Item>
             )}
             style={{ width: "100%", marginBottom: "20px" }}
           />
 
-          {/* Todo Input Section */}
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row", // Change to row to align items horizontally
               alignItems: "center",
+              justifyContent: "center", // Center the items horizontally
             }}
           >
             <Input
               placeholder="Enter Todo"
               value={todoInput}
               onChange={(e) => setTodoInput(e.target.value)}
-              onPressEnter={addTodo} // Enter 키로 추가
+              onPressEnter={addTodo} // Add on Enter key press
               style={{
                 marginBottom: 10,
                 width: "300px",
@@ -237,21 +304,11 @@ const CustomCalendar = () => {
                 color: darkMode ? "#fff" : "#000", // Input text color
               }}
             />
-            <Upload
-              name="image"
-              showUploadList={false}
-              action="/upload"
-              onChange={(info) => handleImageChange(selectedDate.format("YYYY-MM-DD"), info)}
-            >
-              <Button icon={<UploadOutlined />} size="small">
-                Upload Image
-              </Button>
-            </Upload>
             <Button
               onClick={addTodo}
               type="primary"
               icon={<PlusOutlined />}
-              style={{ marginTop: "10px" }}
+              style={{ marginLeft: "10px", marginBottom: "10px" }} // Add margin to the left and bottom
             >
               Add Todo
             </Button>
