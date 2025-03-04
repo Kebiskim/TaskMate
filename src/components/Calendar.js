@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { Calendar, Button, Input, List, Upload, message, Checkbox } from "antd";
 import dayjs from "dayjs";
 import axios from "axios";
-import { PlusOutlined, LeftOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
+import { PlusOutlined, LeftOutlined, RightOutlined, UploadOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { ThemeContext } from "../context/ThemeContext"; // Import ThemeContext
 
 const CustomCalendar = () => {
@@ -57,7 +57,7 @@ const CustomCalendar = () => {
   const addTodo = async () => {
     if (todoInput.trim()) {
       const dateKey = selectedDate.format("YYYY-MM-DD");
-      const newTodo = { title: todoInput, description: "", date: dateKey };
+      const newTodo = { title: todoInput, description: "", date: dateKey, priority: 0, importance: "low" }; // Add priority and importance fields
       try {
         const response = await axios.post("http://localhost:8080/api/todos", newTodo);
         setTodos((prevTodos) => ({
@@ -97,8 +97,56 @@ const CustomCalendar = () => {
     }
   };
 
+  const getPriorityColor = (importance) => {
+    switch (importance) {
+      case "low":
+        return "#d9d9d9"; // Gray for low priority
+      case "middle":
+        return "#faad14"; // Yellow for medium priority
+      case "high":
+        return "#f5222d"; // Red for high priority
+      default:
+        return "#d9d9d9";
+    }
+  };
+  
+  const changeTodoPriority = async (id) => {
+    try {
+      const selectedDateKey = selectedDate.format("YYYY-MM-DD");
+      const todosForDate = todos[selectedDateKey] || []; // undefined 방지
+      const todoIndex = todosForDate.findIndex((todo) => todo.id === id);
+  
+      if (todoIndex === -1) {
+        console.error("Todo not found for ID:", id);
+        return;
+      }
+  
+      // change importance (circulating low -> middle -> high -> low)
+      const importanceCycle = ["low", "middle", "high"];
+      const currentImportance = todosForDate[todoIndex].importance;
+      const newImportance = importanceCycle[(importanceCycle.indexOf(currentImportance) + 1) % 3];
+  
+      await axios.patch(`http://localhost:8080/api/todos/${id}/changeimportance`, null, {
+        params: { importance: newImportance }
+      });
+  
+      // update a state (UI)
+      const updatedTodos = [...todosForDate];
+      updatedTodos[todoIndex] = { ...updatedTodos[todoIndex], importance: newImportance };
+  
+      setTodos((prevTodos) => ({
+        ...prevTodos,
+        [selectedDateKey]: updatedTodos
+      }));
+  
+    } catch (error) {
+      console.error("Failed to change todo priority:", error);
+    }
+  };
+  
   const onSelect = (date) => {
     setSelectedDate(date);
+    fetchTodosForSelectedDate();
   };
 
   const onPanelChange = (value, mode) => {
@@ -150,17 +198,6 @@ const CustomCalendar = () => {
     const nextMonth = currentDate.add(1, "month");
     setCurrentDate(nextMonth); // Update the current date to the next month
     setSelectedDate(nextMonth); // Set the selected date to the same month
-  };
-
-  const handleImageChange = (date, info) => {
-    if (info.file.status === "done") {
-      const newImageList = { ...imageList };
-      newImageList[date] = info.file.response.url; // Assuming the server returns the image URL
-      setImageList(newImageList);
-    } else if (info.file.status === "error") {
-      message.error("Image upload failed.");
-      console.error("Image upload failed:", info.file.error);
-    }
   };
 
   return (
@@ -258,6 +295,14 @@ const CustomCalendar = () => {
                 actions={[
                   <Button type="link" onClick={() => deleteTodo(item.id)}>
                     Delete
+                  </Button>,
+                  <Button
+                    type="link"
+                    icon={<ExclamationCircleOutlined />}
+                    onClick={() => changeTodoPriority(item.id)}
+                    style={{ color: getPriorityColor(item.importance) }}
+                  >
+                    Priority
                   </Button>,
                 ]}
               >
