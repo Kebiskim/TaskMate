@@ -1,25 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useContext } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Layout } from "antd";
+import Home from "./components/Home";
+import Calendar from "./components/Calendar";
+import Navbar from "./components/Navbar";
+import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider>
+      <Router>
+        <Layout style={{ minHeight: "100vh" }}>
+          <Navbar />
+          <MainContent />
+        </Layout>
+      </Router>
+    </ThemeProvider>
   );
-}
+};
+
+const MainContent = () => {
+  const { darkMode } = useContext(ThemeContext);
+  return (
+    <Layout.Content style={{ background: darkMode ? "#121212" : "#fff", padding: "20px" }}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/calendar" element={<Calendar />} />
+      </Routes>
+    </Layout.Content>
+  );
+};
 
 export default App;
