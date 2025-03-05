@@ -502,7 +502,7 @@ const CustomCalendar = () => {
               value={todoInput}
               onChange={(e) => setTodoInput(e.target.value)}
               onPressEnter={addTodo} // Add on Enter key press
-              maxLength={64} // Limit input length to 64 characters
+              maxLength={256}
               style={{
                 marginBottom: 10,
                 width: "300px",
