@@ -27,7 +27,6 @@
 할일 입력 작업에 반복성을 더하기 위해 사용했습니다.
 완료 여부, 삭제, 우선순위 지정 기능을 직관적으로 사용하게끔 하는 데 초점을 두었습니다.
 
-
 ### 폴더구조
 taskmate/                           # Root Folder
 ├── node_modules/                   # Dependencies (automatically created after npm install)
