@@ -12,7 +12,11 @@
 1-3. 우측 Priority 버튼을 클릭하여 3단계로 우선순위 지정이 가능합니다.
 
 ### 소스 빌드 및 실행 방법
-
+1. VSCode 설치
+2. NodeJS 설치 (v20.17.0)
+3. 루트폴더/package.json 내 dependencies에서 항목 및 버전 참고하여 각각 npm install 진행
+   (혹은 이 터미널에서 명령어 실행: npm install @ant-design/icons@^5.6.1 @testing-library/dom@^10.4.0 @testing-library/jest-dom@^6.6.3 @testing-library/react@^16.2.0 @testing-library/user-event@^13.5.0 antd@^5.24.2 axios@^1.8.1 react@^19.0.0 react-dom@^19.0.0 react-router-dom@^7.2.0 react-scripts@5.0.1 web-vitals@^2.1.4)
+4. VSCode 터미널에서 npm start 명령어 입력하여 실행
 
 ### 주력으로 사용한 컴포넌트
 1. 달력(Calendar 컴포넌트)
