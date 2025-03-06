@@ -28,6 +28,7 @@
 완료 여부, 삭제, 우선순위 지정 기능을 직관적으로 사용하게끔 하는 데 초점을 두었습니다.
 
 ### 폴더구조
+```
 taskmate/                           # Root Folder
 ├── node_modules/                   # Dependencies (automatically created after npm install)
 ├── public/
@@ -51,3 +52,4 @@ taskmate/                           # Root Folder
 ├── .gitignore                      # Git ignore file
 ├── package.json                    # Project metadata and dependencies
 └── README.md                       # description
+```

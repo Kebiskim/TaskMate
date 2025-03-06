@@ -4,7 +4,7 @@ import {
 	PlusOutlined,
 	RightOutlined,
 } from "@ant-design/icons";
-import { Button, Calendar, Checkbox, Input, List, Modal, message } from "antd";
+import { Button, Calendar, Checkbox, Input, List, Modal } from "antd";
 import axios from "axios";
 import dayjs from "dayjs";
 import React, { useState, useContext, useEffect, useRef } from "react";
@@ -23,6 +23,8 @@ const CustomCalendar = () => {
 	const [todoToDelete, setTodoToDelete] = useState(null); // Store the ID of the todo to delete
 	const [isWarningModalVisible, setIsWarningModalVisible] = useState(false); // Manage warning modal visibility
 	const canHandleKeyDown = useRef(false); // Ref to track if keyboard events should be handled
+  const [isLengthWarningVisible, setIsLengthWarningVisible] = useState(false);
+  const MAX_LENGTH = 4096;
 
 	// Fetch todos for current month when the date changes
 	useEffect(() => {
@@ -162,15 +164,6 @@ const CustomCalendar = () => {
 			}
 		} else {
 			setIsWarningModalVisible(true); // Show warning modal if input is empty
-		}
-	};
-
-	// Custom handler for input Enter key press
-	const handleInputEnter = (e) => {
-		if (!todoInput.trim()) {
-			// If input is empty, prevent default behavior
-			e.preventDefault();
-			addTodo();
 		}
 	};
 
@@ -342,6 +335,17 @@ const CustomCalendar = () => {
 		setSelectedDate(nextMonth); // Set the selected date to the same month
 	};
 
+   const handleInputChange = (e) => {
+    const value = e.target.value;
+    
+    if (value.length > MAX_LENGTH) {
+      setIsLengthWarningVisible(true);
+      setTodoInput(value.substring(0, MAX_LENGTH));
+    } else {
+      setTodoInput(value);
+    }
+  };
+
 	return (
 		<div
 			style={{
@@ -496,20 +500,20 @@ const CustomCalendar = () => {
 							justifyContent: "center", // Center the items horizontally
 						}}
 					>
-						{/* Todo input field */}
-						<Input
-							placeholder="Enter Todo"
-							value={todoInput}
-							onChange={(e) => setTodoInput(e.target.value)}
-							onPressEnter={addTodo} // Add on Enter key press
-							maxLength={256}
-							style={{
-								marginBottom: 10,
-								width: "300px",
-								background: darkMode ? "#333" : "#fff", // Input background color
-								color: darkMode ? "#fff" : "#000", // Input text color
-							}}
-						/>
+          {/* Todo input field */}
+          <Input
+              placeholder="Enter Todo"
+              value={todoInput}
+              onChange={handleInputChange} // 수정된 핸들러 사용
+              onPressEnter={addTodo}
+              maxLength={MAX_LENGTH} // maxLength 속성은 유지 (HTML 입력 제한용)
+              style={{
+                marginBottom: 10,
+                width: "300px",
+                background: darkMode ? "#333" : "#fff",
+                color: darkMode ? "#fff" : "#000",
+              }}
+            />
 						{/* Add todo button */}
 						<Button
 							onClick={addTodo}
