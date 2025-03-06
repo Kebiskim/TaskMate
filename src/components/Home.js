@@ -79,15 +79,15 @@ const Home = () => {
         </Carousel>
 
         {/* Accordion for Additional Tips */}
-        <Collapse defaultActiveKey={['1']} style={{ width: '80%', marginBottom: '20px' }}>
+        <Collapse defaultActiveKey={['1']} style={{ width: '60%', marginBottom: '20px' }}>
           <Panel header="How TaskMate Can Help You" key="1" style={{ background: darkMode ? '#333' : '#fff' }}>
             <p style={{ color: darkMode ? '#ddd' : '#000' }}>
-              TaskMate helps you organize your tasks with ease. You can create tasks, set deadlines, and even receive reminders. It’s the perfect tool for managing your work and personal life.
+              TaskMate helps you organize your tasks with ease. It’s the perfect tool for managing your work and personal life.
             </p>
           </Panel>
           <Panel header="Pro Tips" key="2" style={{ background: darkMode ? '#333' : '#fff' }}>
             <p style={{ color: darkMode ? '#ddd' : '#000' }}>
-              Use the calendar view to get an overview of your tasks for the entire month. You can also sync TaskMate with your email to automatically add tasks from incoming messages!
+              Use the calendar view to get an overview of your tasks for the entire month.
             </p>
           </Panel>
         </Collapse>
